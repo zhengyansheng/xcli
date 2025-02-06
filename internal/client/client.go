@@ -51,10 +51,38 @@ type JobSubmitRequest struct {
 	Command string `json:"command"`
 }
 
+// Host 定义主机信息结构
+type Host struct {
+	HostName       string    `json:"hostName"`
+	HostType       string    `json:"hostType"`
+	HostModel      string    `json:"hostModel"`
+	CpuFactor      float64   `json:"cpuFactor"`
+	MaxCpus        int       `json:"maxCpus"`
+	MaxMem         int64     `json:"maxMem"`
+	MaxSwap        int64     `json:"maxSwap"`
+	MaxTmp         int64     `json:"maxTmp"`
+	NDisks         int       `json:"nDisks"`
+	NRes           int       `json:"nRes"`
+	Resources      []string  `json:"resources"`
+	NDRes          int       `json:"nDRes"`
+	DResources     []string  `json:"DResources"`
+	Windows        string    `json:"windows"`
+	NumIndx        int       `json:"numIndx"`
+	BusyThreshold  []float64 `json:"busyThreshold"`
+	IsServer       bool      `json:"isServer"`
+	Cores          int       `json:"cores"`
+	HostAddr       string    `json:"hostAddr"`
+	Pprocs         int       `json:"pprocs"`
+	CoresPerProc   int       `json:"cores_per_proc"`
+	ThreadsPerCore int       `json:"threads_per_core"`
+}
+
 // HostsResponse 定义主机查询响应
 type HostsResponse struct {
-	// TODO: 根据实际API响应定义字段
-	Hosts []interface{} `json:"hosts"`
+	Code  int    `json:"code"`
+	Msg   string `json:"msg"`
+	Data  []Host `json:"data"`
+	Count int    `json:"count"`
 }
 
 // Job 定义作业信息
@@ -158,6 +186,15 @@ func (c *APIClient) SubmitJob(token string, req *JobSubmitRequest) (*JobSubmitRe
 // GetHosts 查询主机信息
 func (c *APIClient) GetHosts(token string, params map[string]string) (*HostsResponse, error) {
 	var resp HostsResponse
+
+	// 从 baseURL 中提取 ip:port 部分
+	baseURL := c.baseURL
+	if idx := strings.Index(baseURL, "/xce/v1"); idx != -1 {
+		baseURL = baseURL[:idx]
+	}
+	// 构建完整的主机查询 URL
+	hostsURL := baseURL + "/xce/v1/hosts"
+
 	req := c.client.R().
 		SetHeader("Authorization", "Bearer "+token).
 		SetResult(&resp)
@@ -167,13 +204,13 @@ func (c *APIClient) GetHosts(token string, params map[string]string) (*HostsResp
 		req.SetQueryParam(k, v)
 	}
 
-	httpResp, err := req.Get(c.baseURL + "/xce/v1/hosts")
+	httpResp, err := req.Get(hostsURL)
 	if err != nil {
 		return nil, fmt.Errorf("查询主机请求失败: %v", err)
 	}
 
-	if httpResp.StatusCode() != 200 {
-		return nil, fmt.Errorf("查询主机失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
+	if httpResp.StatusCode() != 200 || resp.Code != 200 {
+		return nil, fmt.Errorf("查询主机失败: %s", resp.Msg)
 	}
 
 	return &resp, nil

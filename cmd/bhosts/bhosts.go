@@ -2,7 +2,9 @@ package bhosts
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"github.com/xx/internal/client"
@@ -103,6 +105,25 @@ func runBHosts(cm *config.ConfigManager, infoType, hostType string) error {
 }
 
 func printHosts(hosts *client.HostsResponse) {
-	// TODO: 根据实际的响应结构实现格式化输出
-	fmt.Printf("%v\n", hosts)
+	if hosts.Count == 0 {
+		fmt.Println("没有找到主机")
+		return
+	}
+
+	// 打印表头
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "HOST_NAME\tTYPE\tMODEL\tCPUS\tMEM(MB)\tSWAP(MB)\tRESOURCES")
+
+	// 打印主机信息
+	for _, host := range hosts.Data {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
+			host.HostName,
+			host.HostType,
+			host.HostModel,
+			host.MaxCpus,
+			host.MaxMem/1024,  // 转换为MB
+			host.MaxSwap/1024, // 转换为MB
+			strings.Join(append(host.Resources, host.DResources...), " "))
+	}
+	w.Flush()
 }
