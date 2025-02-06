@@ -3,7 +3,9 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/xx/cmd/apiserver"
+	"github.com/xx/cmd/bhosts"
 	setConfig "github.com/xx/cmd/config"
+	"github.com/xx/cmd/xsub"
 	"github.com/xx/pkg/config"
 )
 
@@ -25,6 +27,8 @@ func init() {
 	// 添加子命令
 	rootCmd.AddCommand(getAPIServerCmd())
 	rootCmd.AddCommand(getConfigCmd())
+	rootCmd.AddCommand(xsub.NewXSubCmd(configManager))
+	rootCmd.AddCommand(bhosts.NewBHostsCmd(configManager))
 }
 
 // getConfigCmd 返回配置子命令

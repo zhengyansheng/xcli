@@ -12,6 +12,24 @@ type LogonResponse struct {
 	Version string `json:"version"`
 }
 
+// JobSubmitResponse 定义作业提交响应
+type JobSubmitResponse struct {
+	JobID string `json:"jobid"`
+}
+
+// JobSubmitRequest 定义作业提交请求
+type JobSubmitRequest struct {
+	Queue   string `json:"queue"`
+	ResReq  string `json:"resreq"`
+	Command string `json:"command"`
+}
+
+// HostsResponse 定义主机查询响应
+type HostsResponse struct {
+	// TODO: 根据实际API响应定义字段
+	Hosts []interface{} `json:"hosts"`
+}
+
 // APIClient 定义API客户端
 type APIClient struct {
 	client  *resty.Client
@@ -63,4 +81,48 @@ func (c *APIClient) Logout(token string) error {
 	}
 
 	return nil
+}
+
+// SubmitJob 提交作业
+func (c *APIClient) SubmitJob(token string, req *JobSubmitRequest) (*JobSubmitResponse, error) {
+	var resp JobSubmitResponse
+	httpResp, err := c.client.R().
+		SetHeader("Authorization", "Bearer "+token).
+		SetBody(req).
+		SetResult(&resp).
+		Post(c.baseURL + "/xce/v1/jobs")
+
+	if err != nil {
+		return nil, fmt.Errorf("提交作业请求失败: %v", err)
+	}
+
+	if httpResp.StatusCode() != 200 {
+		return nil, fmt.Errorf("提交作业失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
+	}
+
+	return &resp, nil
+}
+
+// GetHosts 查询主机信息
+func (c *APIClient) GetHosts(token string, params map[string]string) (*HostsResponse, error) {
+	var resp HostsResponse
+	req := c.client.R().
+		SetHeader("Authorization", "Bearer "+token).
+		SetResult(&resp)
+
+	// 添加查询参数
+	for k, v := range params {
+		req.SetQueryParam(k, v)
+	}
+
+	httpResp, err := req.Get(c.baseURL + "/xce/v1/hosts")
+	if err != nil {
+		return nil, fmt.Errorf("查询主机请求失败: %v", err)
+	}
+
+	if httpResp.StatusCode() != 200 {
+		return nil, fmt.Errorf("查询主机失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
+	}
+
+	return &resp, nil
 }
