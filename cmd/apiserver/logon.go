@@ -23,10 +23,17 @@ func updateServerConfig(cfg *config.Config, url, username string, loginResp *cli
 
 	// 如果是新服务器，添加到列表
 	if !found {
-		cfg.APIServerInfo = append(cfg.APIServerInfo, config.APIServerInfo{
+		// 生成新服务器名称
+		serverName := fmt.Sprintf("apiserver%d", len(cfg.APIServerInfo)+1)
+
+		newServer := config.APIServerInfo{
+			Name:  serverName,
 			URL:   url,
 			Token: loginResp.Data.Token,
-		})
+		}
+
+		// 添加到数组末尾
+		cfg.APIServerInfo = append(cfg.APIServerInfo, newServer)
 	}
 
 	// 如果是第一个服务器，设置为默认服务器

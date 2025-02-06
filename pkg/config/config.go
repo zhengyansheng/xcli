@@ -9,12 +9,12 @@ import (
 )
 
 type APIServerInfo struct {
-	URL          string `json:"url"`
 	Name         string `json:"name"`
-	JobIDRange   string `json:"jobid_range"`
-	ClusterIndex string `json:"clusterIndex"`
-	Version      string `json:"version"`
+	URL          string `json:"url"`
 	Token        string `json:"token"`
+	JobIDRange   string `json:"jobid_range,omitempty"`
+	ClusterIndex string `json:"cluster_index,omitempty"`
+	Version      string `json:"version,omitempty"`
 }
 
 type Config struct {
@@ -22,7 +22,7 @@ type Config struct {
 	DefaultAPIServer string          `json:"defaultAPIserver"`
 	DefaultQueryAll  bool            `json:"defaultqueryall"`
 	CACert           string          `json:"cacert"`
-	APIServerInfo    []APIServerInfo `json:"APIserverInfo"`
+	APIServerInfo    []APIServerInfo `json:"servers"`
 }
 
 // ConfigManager 用于统一管理配置
