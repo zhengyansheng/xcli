@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"strings"
 
 	"resty.dev/v3"
 )
@@ -29,9 +30,18 @@ type LogonResponse struct {
 	Count int       `json:"count"`
 }
 
+// JobSubmitData 定义作业提交响应中的数据结构
+type JobSubmitData struct {
+	JobID   int64  `json:"jobid"`
+	Message string `json:"message"`
+}
+
 // JobSubmitResponse 定义作业提交响应
 type JobSubmitResponse struct {
-	JobID string `json:"jobid"`
+	Code  int           `json:"code"`
+	Msg   string        `json:"msg"`
+	Data  JobSubmitData `json:"data"`
+	Count int           `json:"count"`
 }
 
 // JobSubmitRequest 定义作业提交请求
@@ -117,18 +127,29 @@ func (c *APIClient) Logout(token string) error {
 // SubmitJob 提交作业
 func (c *APIClient) SubmitJob(token string, req *JobSubmitRequest) (*JobSubmitResponse, error) {
 	var resp JobSubmitResponse
+
+	// 从 baseURL 中提取 ip:port 部分
+	baseURL := c.baseURL
+	// 如果 URL 包含路径，去掉路径部分
+	if idx := strings.Index(baseURL, "/xce/v1"); idx != -1 {
+		baseURL = baseURL[:idx]
+	}
+	// 构建完整的作业提交 URL
+	submitURL := baseURL + "/xce/v1/jobs"
+
 	httpResp, err := c.client.R().
 		SetHeader("Authorization", "Bearer "+token).
+		SetHeader("Content-Type", "application/json").
 		SetBody(req).
 		SetResult(&resp).
-		Post(c.baseURL + "/xce/v1/jobs")
+		Post(submitURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("提交作业请求失败: %v", err)
 	}
 
-	if httpResp.StatusCode() != 200 {
-		return nil, fmt.Errorf("提交作业失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
+	if httpResp.StatusCode() != 200 || resp.Code != 201 {
+		return nil, fmt.Errorf("提交作业失败: %s", resp.Msg)
 	}
 
 	return &resp, nil

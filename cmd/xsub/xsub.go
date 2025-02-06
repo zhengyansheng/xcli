@@ -11,8 +11,9 @@ import (
 // NewXSubCmd 创建作业提交命令
 func NewXSubCmd(configManager *config.ConfigManager) *cobra.Command {
 	var (
-		queue  string
-		resReq string
+		queue   string
+		resReq  string
+		command string
 	)
 
 	cmd := &cobra.Command{
@@ -25,7 +26,9 @@ func NewXSubCmd(configManager *config.ConfigManager) *cobra.Command {
 			if len(args) == 0 {
 				return fmt.Errorf("请提供要执行的命令")
 			}
-			return runXSub(configManager, queue, resReq, args)
+			// 将参数组合成命令字符串
+			// command := strings.Join(args, " ")
+			return runXSub(configManager, queue, resReq, command)
 		},
 	}
 
@@ -33,14 +36,14 @@ func NewXSubCmd(configManager *config.ConfigManager) *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&queue, "queue", "q", "", "指定作业队列")
 	flags.StringVarP(&resReq, "resreq", "R", "", "指定资源需求")
-
+	flags.StringVarP(&command, "command", "c", "", "指定要执行的命令")
 	// 设置必需参数
 	cmd.MarkFlagRequired("queue")
 
 	return cmd
 }
 
-func runXSub(cm *config.ConfigManager, queue, resReq string, args []string) error {
+func runXSub(cm *config.ConfigManager, queue, resReq, command string) error {
 	// 获取配置
 	cfg, err := cm.GetConfig()
 	if err != nil {
@@ -60,6 +63,7 @@ func runXSub(cm *config.ConfigManager, queue, resReq string, args []string) erro
 			break
 		}
 	}
+	fmt.Println(serverInfo)
 
 	if serverInfo == nil {
 		return fmt.Errorf("未找到默认服务器信息")
@@ -69,21 +73,15 @@ func runXSub(cm *config.ConfigManager, queue, resReq string, args []string) erro
 		return fmt.Errorf("未登录到服务器，请先登录")
 	}
 
-	// 构建命令字符串
-	command := ""
-	for i, arg := range args {
-		if i > 0 {
-			command += " "
-		}
-		command += arg
-	}
-
 	// 创建作业提交请求
 	jobReq := &client.JobSubmitRequest{
 		Queue:   queue,
 		ResReq:  resReq,
 		Command: command,
 	}
+	fmt.Println(jobReq)
+	fmt.Println(serverInfo.Token)
+	fmt.Println(cfg.DefaultAPIServer)
 
 	// 创建 API 客户端并提交作业
 	apiClient := client.NewAPIClient(cfg.DefaultAPIServer)
@@ -92,6 +90,6 @@ func runXSub(cm *config.ConfigManager, queue, resReq string, args []string) erro
 		return fmt.Errorf("提交作业失败: %v", err)
 	}
 
-	fmt.Printf("作业提交成功，作业ID: %s\n", jobResp.JobID)
+	fmt.Printf("作业提交成功，作业ID: %d\n%s\n", jobResp.Data.JobID, jobResp.Data.Message)
 	return nil
 }
