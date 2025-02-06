@@ -85,17 +85,26 @@ type HostsResponse struct {
 	Count int    `json:"count"`
 }
 
-// Job 定义作业信息
+// Job 定义作业信息结构
 type Job struct {
-	JobID   int    `json:"jobid"`
-	Status  string `json:"status"`
-	Queue   string `json:"queue"`
-	Command string `json:"command"`
+	JobID          int64  `json:"jobid"`
+	User           string `json:"user"`
+	Status         string `json:"status"`
+	JobName        string `json:"jobname"`
+	Queue          string `json:"queue"`
+	ProjectName    string `json:"projectname"`
+	Command        string `json:"command"`
+	ResReq         string `json:"resreq"`
+	SubmitTime     string `json:"submittime"`
+	JobDescription string `json:"jobdescription"`
 }
 
 // JobsResponse 定义作业查询响应
 type JobsResponse struct {
-	Jobs []Job `json:"jobs"`
+	Code  int    `json:"code"`
+	Msg   string `json:"msg"`
+	Data  []Job  `json:"data"`
+	Count int    `json:"count"`
 }
 
 // APIClient 定义API客户端
@@ -219,22 +228,36 @@ func (c *APIClient) GetHosts(token string, params map[string]string) (*HostsResp
 // GetJobs 查询作业信息
 func (c *APIClient) GetJobs(token string, params map[string]string) (*JobsResponse, error) {
 	var resp JobsResponse
+
+	// 从 baseURL 中提取 ip:port 部分
+	baseURL := c.baseURL
+	if idx := strings.Index(baseURL, "/xce/v1"); idx != -1 {
+		baseURL = baseURL[:idx]
+	}
+	// 构建完整的作业查询 URL
+	jobsURL := baseURL + "/xce/v1/jobs"
+
 	req := c.client.R().
 		SetHeader("Authorization", "Bearer "+token).
 		SetResult(&resp)
 
-	// 添加查询参数
-	for k, v := range params {
-		req.SetQueryParam(k, v)
+	// 处理过滤条件
+	if filter, ok := params["filter"]; ok {
+		req.SetQueryParam("filter", filter)
 	}
 
-	httpResp, err := req.Get(c.baseURL + "/xce/v1/jobs")
+	// 处理字段选择
+	if fields, ok := params["fields"]; ok {
+		req.SetQueryParam("fields", fields)
+	}
+
+	httpResp, err := req.Get(jobsURL)
 	if err != nil {
 		return nil, fmt.Errorf("查询作业请求失败: %v", err)
 	}
 
-	if httpResp.StatusCode() != 200 {
-		return nil, fmt.Errorf("查询作业失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
+	if httpResp.StatusCode() != 200 || resp.Code != 200 {
+		return nil, fmt.Errorf("查询作业失败: %s", resp.Msg)
 	}
 
 	return &resp, nil

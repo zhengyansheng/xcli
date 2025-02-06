@@ -2,7 +2,9 @@ package bjobs
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"github.com/xx/internal/client"
@@ -20,14 +22,14 @@ func NewBJobsCmd(configManager *config.ConfigManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bjobs",
 		Short: "查询作业信息",
-		Long: `查询作业信息，支持按用户和队列过滤，以及自定义显示字段。
+		Long: `查询作业信息，支持按用户和队列过滤。
 示例:
-  cli bjobs                                    # 查询所有作业
-  cli bjobs -u user1                          # 查询指定用户的作业
-  cli bjobs -q queue1 -u user1                # 查询指定用户在指定队列的作业
-  cli bjobs jobid,status,queue,command        # 指定显示字段`,
+  cli bjobs                                # 查询所有作业
+  cli bjobs -u user1                      # 查询指定用户的作业
+  cli bjobs -q queue1 -u user1            # 查询指定用户在指定队列的作业
+  cli bjobs jobid,status,queue,command    # 查询指定字段`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// 处理自定义字段
+			// 如果有位置参数，作为字段列表
 			if len(args) > 0 {
 				fields = args[0]
 			}
@@ -73,7 +75,7 @@ func runBJobs(cm *config.ConfigManager, user, queue, fields string) error {
 	}
 
 	// 构建查询参数
-	queryParams := make(map[string]string)
+	params := make(map[string]string)
 
 	// 处理过滤条件
 	var filters []string
@@ -84,17 +86,17 @@ func runBJobs(cm *config.ConfigManager, user, queue, fields string) error {
 		filters = append(filters, fmt.Sprintf("queue:eq:%s", queue))
 	}
 	if len(filters) > 0 {
-		queryParams["filter"] = fmt.Sprintf("[%s]", strings.Join(filters, ","))
+		params["filter"] = fmt.Sprintf("[%s]", strings.Join(filters, ","))
 	}
 
 	// 处理字段选择
 	if fields != "" {
-		queryParams["fields"] = fields
+		params["fields"] = fields
 	}
 
 	// 创建 API 客户端并查询作业信息
 	apiClient := client.NewAPIClient(cfg.DefaultAPIServer)
-	jobs, err := apiClient.GetJobs(serverInfo.Token, queryParams)
+	jobs, err := apiClient.GetJobs(serverInfo.Token, params)
 	if err != nil {
 		return fmt.Errorf("查询作业失败: %v", err)
 	}
@@ -105,20 +107,23 @@ func runBJobs(cm *config.ConfigManager, user, queue, fields string) error {
 }
 
 func printJobs(jobs *client.JobsResponse) {
-	if len(jobs.Jobs) == 0 {
+	if jobs.Count == 0 {
 		fmt.Println("没有找到作业")
 		return
 	}
 
 	// 打印表头
-	fmt.Printf("%-10s %-10s %-15s %s\n", "JOBID", "STATUS", "QUEUE", "COMMAND")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "JOBID\tUSER\tSTATUS\tQUEUE\tCOMMAND")
 
 	// 打印作业信息
-	for _, job := range jobs.Jobs {
-		fmt.Printf("%-10d %-10s %-15s %s\n",
+	for _, job := range jobs.Data {
+		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\n",
 			job.JobID,
+			job.User,
 			job.Status,
 			job.Queue,
 			job.Command)
 	}
+	w.Flush()
 }

@@ -63,7 +63,7 @@ func runXSub(cm *config.ConfigManager, queue, resReq, command string) error {
 			break
 		}
 	}
-	fmt.Println(serverInfo)
+	// fmt.Println(serverInfo)
 
 	if serverInfo == nil {
 		return fmt.Errorf("未找到默认服务器信息")
@@ -79,9 +79,9 @@ func runXSub(cm *config.ConfigManager, queue, resReq, command string) error {
 		ResReq:  resReq,
 		Command: command,
 	}
-	fmt.Println(jobReq)
-	fmt.Println(serverInfo.Token)
-	fmt.Println(cfg.DefaultAPIServer)
+	// fmt.Println(jobReq)
+	// fmt.Println(serverInfo.Token)
+	// fmt.Println(cfg.DefaultAPIServer)
 
 	// 创建 API 客户端并提交作业
 	apiClient := client.NewAPIClient(cfg.DefaultAPIServer)
