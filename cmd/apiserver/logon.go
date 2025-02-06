@@ -15,8 +15,7 @@ func updateServerConfig(cfg *config.Config, url, username string, loginResp *cli
 	for i, server := range cfg.APIServerInfo {
 		if server.URL == url {
 			// 更新现有服务器信息
-			cfg.APIServerInfo[i].Token = loginResp.Token
-			cfg.APIServerInfo[i].Version = loginResp.Version
+			cfg.APIServerInfo[i].Token = loginResp.Data.Token
 			found = true
 			break
 		}
@@ -25,9 +24,8 @@ func updateServerConfig(cfg *config.Config, url, username string, loginResp *cli
 	// 如果是新服务器，添加到列表
 	if !found {
 		cfg.APIServerInfo = append(cfg.APIServerInfo, config.APIServerInfo{
-			URL:     url,
-			Token:   loginResp.Token,
-			Version: loginResp.Version,
+			URL:   url,
+			Token: loginResp.Data.Token,
 		})
 	}
 
@@ -72,13 +70,17 @@ func NewLogonCmd(configManager *config.ConfigManager) *cobra.Command {
 }
 
 func runLogon(opts struct{ username, password, url string }, cm *config.ConfigManager) error {
+	if cm == nil {
+		return fmt.Errorf("配置管理器未初始化")
+	}
+
 	// 创建 API 客户端
 	apiClient := client.NewAPIClient(opts.url)
 
 	// 执行登录
 	loginResp, err := apiClient.Logon(opts.username, opts.password)
 	if err != nil {
-		return err
+		return fmt.Errorf("登录失败: %v", err)
 	}
 
 	// 获取配置

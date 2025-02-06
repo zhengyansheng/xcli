@@ -6,10 +6,27 @@ import (
 	"resty.dev/v3"
 )
 
+// APIResponse 定义通用的API响应结构
+type APIResponse struct {
+	Code  int         `json:"code"`
+	Msg   string      `json:"msg"`
+	Data  interface{} `json:"data"`
+	Count int         `json:"count"`
+}
+
+// LogonData 定义登录响应中的数据结构
+type LogonData struct {
+	Token string `json:"token"`
+	Path  string `json:"path"`
+	IP    string `json:"ip"`
+}
+
 // LogonResponse 定义登录响应的结构
 type LogonResponse struct {
-	Token   string `json:"token"`
-	Version string `json:"version"`
+	Code  int       `json:"code"`
+	Msg   string    `json:"msg"`
+	Data  LogonData `json:"data"`
+	Count int       `json:"count"`
 }
 
 // JobSubmitResponse 定义作业提交响应
@@ -28,6 +45,19 @@ type JobSubmitRequest struct {
 type HostsResponse struct {
 	// TODO: 根据实际API响应定义字段
 	Hosts []interface{} `json:"hosts"`
+}
+
+// Job 定义作业信息
+type Job struct {
+	JobID   int    `json:"jobid"`
+	Status  string `json:"status"`
+	Queue   string `json:"queue"`
+	Command string `json:"command"`
+}
+
+// JobsResponse 定义作业查询响应
+type JobsResponse struct {
+	Jobs []Job `json:"jobs"`
 }
 
 // APIClient 定义API客户端
@@ -52,15 +82,16 @@ func (c *APIClient) Logon(username, password string) (*LogonResponse, error) {
 			"username": username,
 			"password": password,
 		}).
-		SetResult(&loginResp). // 设置结果结构体
-		Post(c.baseURL + "/xce/v1/auth/logon")
+		SetHeader("Content-Type", "application/json").
+		SetResult(&loginResp).
+		Post(c.baseURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("登录失败: %v", err)
 	}
 
-	if resp.StatusCode() != 200 {
-		return nil, fmt.Errorf("登录失败: HTTP %d - %s", resp.StatusCode(), resp.String())
+	if resp.StatusCode() != 200 || loginResp.Code != 200 {
+		return nil, fmt.Errorf("登录失败: %s", loginResp.Msg)
 	}
 
 	return &loginResp, nil
@@ -122,6 +153,30 @@ func (c *APIClient) GetHosts(token string, params map[string]string) (*HostsResp
 
 	if httpResp.StatusCode() != 200 {
 		return nil, fmt.Errorf("查询主机失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
+	}
+
+	return &resp, nil
+}
+
+// GetJobs 查询作业信息
+func (c *APIClient) GetJobs(token string, params map[string]string) (*JobsResponse, error) {
+	var resp JobsResponse
+	req := c.client.R().
+		SetHeader("Authorization", "Bearer "+token).
+		SetResult(&resp)
+
+	// 添加查询参数
+	for k, v := range params {
+		req.SetQueryParam(k, v)
+	}
+
+	httpResp, err := req.Get(c.baseURL + "/xce/v1/jobs")
+	if err != nil {
+		return nil, fmt.Errorf("查询作业请求失败: %v", err)
+	}
+
+	if httpResp.StatusCode() != 200 {
+		return nil, fmt.Errorf("查询作业失败: HTTP %d - %s", httpResp.StatusCode(), httpResp.String())
 	}
 
 	return &resp, nil

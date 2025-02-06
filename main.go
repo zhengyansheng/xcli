@@ -1,8 +1,9 @@
 package main
 
 import (
-	"k8s.io/klog/v2"
 	"os"
+
+	"k8s.io/klog/v2"
 
 	"github.com/xx/cmd"
 	"github.com/xx/pkg/config"
@@ -13,6 +14,12 @@ func main() {
 	configManager, err := config.NewConfigManager()
 	if err != nil {
 		klog.Errorf("初始化配置失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 确保配置管理器被正确初始化
+	if configManager == nil {
+		klog.Error("配置管理器初始化失败")
 		os.Exit(1)
 	}
 
