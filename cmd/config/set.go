@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/spf13/cobra"
 	"github.com/xx/pkg/config"
@@ -45,6 +46,11 @@ func runSet(cm *config.ConfigManager, defaultAPIServer, defaultQueryAll, caCert 
 
 	// 设置默认 APIserver
 	if defaultAPIServer != "" {
+		// 验证 URL 格式
+		if !isValidURL(defaultAPIServer) {
+			return fmt.Errorf("无效的 APIserver URL: %s", defaultAPIServer)
+		}
+
 		found := false
 		for _, server := range cfg.APIServerInfo {
 			if server.URL == defaultAPIServer {
@@ -86,4 +92,10 @@ func runSet(cm *config.ConfigManager, defaultAPIServer, defaultQueryAll, caCert 
 
 	fmt.Println("配置已更新")
 	return nil
+}
+
+// isValidURL 验证 URL 格式
+func isValidURL(url string) bool {
+	re := regexp.MustCompile(`^http[s]?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$`)
+	return re.MatchString(url)
 }
