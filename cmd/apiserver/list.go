@@ -36,6 +36,9 @@ func runList(cm *config.ConfigManager) error {
 		if server.URL == cfg.DefaultAPIServer {
 			isDefault = "*"
 		}
+		if server.Token == "" {
+			continue
+		}
 
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 			isDefault,

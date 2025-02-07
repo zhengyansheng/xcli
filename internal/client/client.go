@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"crypto/tls"
+
 	"resty.dev/v3"
 )
 
@@ -115,14 +117,17 @@ type APIClient struct {
 
 // NewAPIClient 创建新的API客户端
 func NewAPIClient(baseURL string) *APIClient {
-	return &APIClient{
+	c := &APIClient{
 		client:  resty.New(),
 		baseURL: baseURL,
 	}
+	c.client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	return c
 }
 
 // Logon 执行登录操作
 func (c *APIClient) Logon(username, password string) (*LogonResponse, error) {
+	// c.client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	var loginResp LogonResponse
 	resp, err := c.client.R().
 		SetBody(map[string]interface{}{
