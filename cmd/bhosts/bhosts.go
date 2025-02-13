@@ -41,6 +41,7 @@ func NewBHostsCmd(configManager *config.ConfigManager) *cobra.Command {
 	flags.StringVar(&infoType, "type", "basic", "信息类型 (basic/full)")
 	flags.StringVar(&hostType, "host-type", "", "主机类型过滤 (X86_64/ARM)")
 	flags.BoolVar(&fullInfo, "full", false, "显示详细信息")
+	cmd.MarkFlagRequired("host-type")
 
 	return cmd
 }
@@ -112,18 +113,41 @@ func printHosts(hosts *client.HostsResponse) {
 
 	// 打印表头
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "HOST_NAME\tTYPE\tMODEL\tCPUS\tMEM(MB)\tSWAP(MB)\tRESOURCES")
+	fmt.Fprintln(w, "HOST_NAME\tTYPE\tMODEL\tCPU_FACTOR\tMAX_CPUS\tMAX_MEM(MB)\tMAX_SWAP(MB)\tMAX_TMP(MB)\tN_DISKS\tN_RES\tRESOURCES\tN_DRES\tD_RESOURCES\tWINDOWS\tNUM_INDX\tBUSY_THRESHOLD\tIS_SERVER\tCORES\tHOST_ADDR\tPPROCS\tCORES_PER_PROC\tTHREADS_PER_CORE")
 
 	// 打印主机信息
 	for _, host := range hosts.Data {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%s\t%s\t%d\t%s\t%t\t%d\t%s\t%d\t%d\n",
 			host.HostName,
 			host.HostType,
 			host.HostModel,
+			host.CpuFactor,
 			host.MaxCpus,
 			host.MaxMem/1024,  // 转换为MB
 			host.MaxSwap/1024, // 转换为MB
-			strings.Join(append(host.Resources, host.DResources...), " "))
+			host.MaxTmp/1024,  // 转换为MB
+			host.NDisks,
+			host.NRes,
+			strings.Join(append(host.Resources, host.DResources...), " "),
+			host.NDRes,
+			strings.Join(host.DResources, " "),
+			host.Windows,
+			host.NumIndx,
+			strings.Join(float64SliceToStringSlice(host.BusyThreshold), ", "),
+			host.IsServer,
+			host.Cores,
+			host.HostAddr,
+			host.Pprocs,
+			host.CoresPerProc)
 	}
 	w.Flush()
+}
+
+// float64SliceToStringSlice 将 float64 切片转换为 string 切片
+func float64SliceToStringSlice(floats []float64) []string {
+	strs := make([]string, len(floats))
+	for i, v := range floats {
+		strs[i] = fmt.Sprintf("%.2f", v) // Format to 2 decimal places if needed
+	}
+	return strs
 }

@@ -21,7 +21,7 @@ type Config struct {
 	Account          string          `json:"account"`
 	DefaultAPIServer string          `json:"defaultAPIserver"`
 	DefaultQueryAll  bool            `json:"defaultqueryall"`
-	CACert           string          `json:"cacert"`
+	CACert           string          `json:"path"`
 	APIServerInfo    []APIServerInfo `json:"servers"`
 }
 

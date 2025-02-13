@@ -38,7 +38,7 @@ func NewXSubCmd(configManager *config.ConfigManager) *cobra.Command {
 	flags.StringVarP(&resReq, "resreq", "R", "", "指定资源需求")
 	flags.StringVarP(&command, "command", "c", "", "指定要执行的命令")
 	// 设置必需参数
-	cmd.MarkFlagRequired("queue")
+	//cmd.MarkFlagRequired("queue")
 
 	return cmd
 }

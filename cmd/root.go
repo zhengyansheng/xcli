@@ -26,6 +26,8 @@ func Execute(cm *config.ConfigManager) error {
 		return fmt.Errorf("配置管理器未初始化")
 	}
 	configManager = cm
+	cobra.EnableCommandSorting = false
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	// 初始化子命令
 	initCommands()
@@ -35,12 +37,14 @@ func Execute(cm *config.ConfigManager) error {
 
 // initCommands 初始化所有子命令
 func initCommands() {
+
 	// 添加子命令
 	rootCmd.AddCommand(getAPIServerCmd())
 	rootCmd.AddCommand(getConfigCmd())
-	rootCmd.AddCommand(xsub.NewXSubCmd(configManager))
-	rootCmd.AddCommand(bhosts.NewBHostsCmd(configManager))
 	rootCmd.AddCommand(bjobs.NewBJobsCmd(configManager))
+	rootCmd.AddCommand(bhosts.NewBHostsCmd(configManager))
+	rootCmd.AddCommand(xsub.NewXSubCmd(configManager))
+
 }
 
 // getConfigCmd 返回配置子命令
@@ -62,9 +66,13 @@ func getAPIServerCmd() *cobra.Command {
 		Short: "APIserver 相关操作",
 	}
 
-	// 添加子命令
+	// 禁用自动生成标签（这通常用于文档生成，但可以尝试以防止排序）
+	cmd.DisableAutoGenTag = true
+
+	// 手动设置子命令的添加顺序
 	cmd.AddCommand(apiserver.NewLogonCmd(configManager))
 	cmd.AddCommand(apiserver.NewLogoutCmd(configManager))
 	cmd.AddCommand(apiserver.NewListCmd(configManager))
+
 	return cmd
 }

@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"crypto/tls"
@@ -190,7 +191,7 @@ func (c *APIClient) SubmitJob(token string, req *JobSubmitRequest) (*JobSubmitRe
 		return nil, fmt.Errorf("提交作业请求失败: %v", err)
 	}
 
-	if httpResp.StatusCode() != 200 || resp.Code != 201 {
+	if httpResp.StatusCode() != http.StatusOK || resp.Code != http.StatusCreated {
 		return nil, fmt.Errorf("提交作业失败: %s", resp.Msg)
 	}
 
