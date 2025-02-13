@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/spf13/cobra v1.8.1
+	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.130.1
 	resty.dev/v3 v3.0.0-beta.1
 )

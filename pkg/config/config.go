@@ -12,6 +12,7 @@ type APIServerInfo struct {
 	Name         string `json:"name"`
 	URL          string `json:"url"`
 	Token        string `json:"token"`
+	Path         string `json:"path"`
 	JobIDRange   string `json:"jobid_range,omitempty"`
 	ClusterIndex string `json:"cluster_index,omitempty"`
 	Version      string `json:"version,omitempty"`
@@ -21,7 +22,7 @@ type Config struct {
 	Account          string          `json:"account"`
 	DefaultAPIServer string          `json:"defaultAPIserver"`
 	DefaultQueryAll  bool            `json:"defaultqueryall"`
-	CACert           string          `json:"path"`
+	CACert           string          `json:"cacert"`
 	APIServerInfo    []APIServerInfo `json:"servers"`
 }
 

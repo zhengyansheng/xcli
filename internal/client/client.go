@@ -1,12 +1,14 @@
 package client
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
-	"crypto/tls"
-
+	"k8s.io/klog/v2"
 	"resty.dev/v3"
 )
 
@@ -122,13 +124,42 @@ func NewAPIClient(baseURL string) *APIClient {
 		client:  resty.New(),
 		baseURL: baseURL,
 	}
-	c.client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+
 	return c
+}
+
+func (c *APIClient) SetRootCAs(certPath string) {
+	// 如果是 HTTPS，设置根证书
+	// logon
+	if strings.Contains(c.baseURL, "logon") {
+		c.client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+		return
+	}
+
+	if strings.HasPrefix(c.baseURL, "https://") {
+		c.client.SetTLSClientConfig(&tls.Config{
+			RootCAs: loadRootCAs(certPath),
+		})
+	}
+}
+
+// loadRootCAs 加载根证书
+func loadRootCAs(certPath string) *x509.CertPool {
+	certPool := x509.NewCertPool()
+	cert, err := os.ReadFile(certPath)
+	if err != nil {
+		klog.Errorf("无法读取证书文件: %v\n", err)
+		return nil
+	}
+	if ok := certPool.AppendCertsFromPEM(cert); !ok {
+		klog.Error("无法附加证书")
+		return nil
+	}
+	return certPool
 }
 
 // Logon 执行登录操作
 func (c *APIClient) Logon(username, password string) (*LogonResponse, error) {
-	// c.client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	var loginResp LogonResponse
 	resp, err := c.client.R().
 		SetBody(map[string]interface{}{

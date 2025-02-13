@@ -96,6 +96,7 @@ func runBJobs(cm *config.ConfigManager, user, queue, fields string) error {
 
 	// 创建 API 客户端并查询作业信息
 	apiClient := client.NewAPIClient(cfg.DefaultAPIServer)
+	apiClient.SetRootCAs(cfg.CACert)
 	jobs, err := apiClient.GetJobs(serverInfo.Token, params)
 	if err != nil {
 		return fmt.Errorf("查询作业失败: %v", err)

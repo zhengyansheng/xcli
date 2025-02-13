@@ -85,6 +85,7 @@ func runXSub(cm *config.ConfigManager, queue, resReq, command string) error {
 
 	// 创建 API 客户端并提交作业
 	apiClient := client.NewAPIClient(cfg.DefaultAPIServer)
+	apiClient.SetRootCAs(cfg.CACert)
 	jobResp, err := apiClient.SubmitJob(serverInfo.Token, jobReq)
 	if err != nil {
 		return fmt.Errorf("提交作业失败: %v", err)

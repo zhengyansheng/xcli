@@ -95,6 +95,7 @@ func runBHosts(cm *config.ConfigManager, infoType, hostType string) error {
 
 	// 创建 API 客户端并查询主机信息
 	apiClient := client.NewAPIClient(cfg.DefaultAPIServer)
+	apiClient.SetRootCAs(cfg.CACert)
 	hosts, err := apiClient.GetHosts(serverInfo.Token, queryParams)
 	if err != nil {
 		return fmt.Errorf("查询主机信息失败: %v", err)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/xx/internal/cert"
 	"github.com/xx/internal/client"
 	"github.com/xx/pkg/config"
 )
@@ -16,6 +17,7 @@ func updateServerConfig(cfg *config.Config, url, username string, loginResp *cli
 		if server.URL == url {
 			// 更新现有服务器信息
 			cfg.APIServerInfo[i].Token = loginResp.Data.Token
+			cfg.APIServerInfo[i].Path = loginResp.Data.Path // 保存路径
 			found = true
 			break
 		}
@@ -30,6 +32,7 @@ func updateServerConfig(cfg *config.Config, url, username string, loginResp *cli
 			Name:  serverName,
 			URL:   url,
 			Token: loginResp.Data.Token,
+			Path:  loginResp.Data.Path, // 保存路径
 		}
 
 		// 添加到数组末尾
@@ -81,8 +84,24 @@ func runLogon(opts struct{ username, password, url string }, cm *config.ConfigMa
 		return fmt.Errorf("配置管理器未初始化")
 	}
 
+	// 获取配置
+	cfg, err := cm.GetConfig()
+	if err != nil {
+		return fmt.Errorf("获取配置失败: %v", err)
+	}
+
 	// 创建 API 客户端
 	apiClient := client.NewAPIClient(opts.url)
+	apiClient.SetRootCAs(cfg.CACert)
+
+	certPath, err := cert.GetCertPath()
+	if err != nil {
+		return fmt.Errorf("获取证书路径失败: %v", err)
+	}
+	err = cert.GeneratorCert(opts.url, certPath)
+	if err != nil {
+		return fmt.Errorf("生成证书失败: %v", err)
+	}
 
 	// 执行登录
 	loginResp, err := apiClient.Logon(opts.username, opts.password)
@@ -90,16 +109,13 @@ func runLogon(opts struct{ username, password, url string }, cm *config.ConfigMa
 		return fmt.Errorf("登录失败: %v", err)
 	}
 
-	// 获取配置
-	cfg, err := cm.GetConfig()
-	if err != nil {
-		return fmt.Errorf("获取配置失败: %v", err)
-	}
-
 	// 更新服务器信息
 	if err := updateServerConfig(cfg, opts.url, opts.username, loginResp); err != nil {
 		return fmt.Errorf("更新服务器配置失败: %v", err)
 	}
+
+	cfg.CACert = certPath
+	fmt.Println("证书路径: ", certPath)
 
 	// 保存配置
 	if err := cm.SaveConfig(cfg); err != nil {
